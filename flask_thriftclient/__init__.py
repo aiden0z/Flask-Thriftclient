@@ -1,7 +1,7 @@
-from thrift.transport import TSocket, THttpClient, TTransport, TZlibTransport
+from thrift.transport import TSocket, THttpClient, TTransport, TZlibTransport, TSSLSocket
 from thrift.protocol import TBinaryProtocol, TCompactProtocol
 try:
-	#only available from thrift >= 0.9
+	#only available from thrift >= 0.9.1
 	from thrift.protocol import TJSONProtocol
 
 	HAS_JSON_PROTOCOL = True
@@ -35,8 +35,11 @@ class ThriftClient(object):
 		if not config:
 			config = app.config
 
-		config.setdefault("THRIFTCLIENT_TRANSPORT", "tcp://127.0.0.1:9090")
+		config.setdefault("THRIFTCLIENT_TRANSPORT", "tcp://localhost:9090")
 		config.setdefault("THRIFTCLIENT_PROTOCOL", ThriftClient.BINARY)
+
+		config.setdefault("THRIFTCLIENT_SSL_VALIDATE", True)
+		config.setdefault("THRIFTCLIENT_SSL_CA_CERTS", None)
 
 		config.setdefault("THRIFTCLIENT_BUFFERED", False)
 		config.setdefault("THRIFTCLIENT_ZLIB", False)
@@ -58,14 +61,33 @@ class ThriftClient(object):
 
 	def _set_client(self, app, config):
 		#configure thrift thransport
+		if config["THRIFTCLIENT_TRANSPORT"] is None:
+			raise RuntimeError("THRIFTCLIENT_TRANSPORT MUST be specified")
 		uri = urlparse(config["THRIFTCLIENT_TRANSPORT"])
 		if uri.scheme == "tcp":
 			port = uri.port or 9090
-			self.transport = TSocket.TSocket(uri.netloc, port)
-		elif uri.scheme == "http" or uri.scheme == "https":
-			self.transport = THttpClient.THttpClient(config["THRIFTCLIENT_SERVER"])
+			self.transport = TSocket.TSocket(uri.hostname, port)
+		elif uri.scheme == "tcps":
+			port = uri.port or 9090
+			self.transport = TSSLSocket.TSSLSocket(
+				host = uri.hostname,
+				port = port,
+				validate = config["THRIFTCLIENT_SSL_VALIDATE"],
+				ca_certs = config["THRIFTCLIENT_SSL_CA_CERTS"],
+			)
+		elif uri.scheme in ["http", "https"]:
+			self.transport = THttpClient.THttpClient(config["THRIFTCLIENT_TRANSPORT"])
 		elif uri.scheme == "unix":
-			self.transport = TSocket.TSocket(None, None, uri.path)
+                        if uri.hostname is not None:
+				raise RuntimeError("unix socket MUST starts with either unix:/ or unix:///")
+			self.transport = TSocket.TSocket(unix_socket = uri.path)
+		elif uri.scheme == "unixs":
+			if uri.hostname is not None:
+				raise RuntimeError("unixs socket MUST starts with either unixs:/ or unixs:///")
+			self.transport = TSSLSocket.TSSLSocket(
+				validate = config["THRIFTCLIENT_SSL_VALIDATE"],
+				ca_certs  = config["THRIFTCLIENT_SSL_CA_CERTS"],
+				unix_socket = uri.path)
 		else:
 			raise RuntimeError(
 				"invalid configuration for THRIFTCLIENT_TRANSPORT: {transport}"

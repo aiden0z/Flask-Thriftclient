@@ -24,9 +24,10 @@ setup(
     zip_safe=False,
     platforms='any',
     install_requires=[
-        'Flask',
-		'thrift>=9.1'
+        'Flask>=0.7',
+        'thrift>=0.8'
     ],
+    test_suite='tests.thriftclient',
     classifiers=[
         'Development Status :: 1 - Beta',
         'Environment :: Web Environment',
