@@ -1,7 +1,7 @@
 # Flask ThriftClient
 
-This extension provide a simple intergration with remote thrift
-services.
+This extension provide a simple intergration with 
+[Thrift](https://thrift.apache.org/) RPC server.
 
 ~~~python
 from flask import Flask
