@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 """
-Flask-Cache
+Flask-ThriftClient
 -----------
 
-Adds cache support to your Flask application
+Adds thrift client support to your Flask application
 
 """
 
@@ -12,7 +12,7 @@ from setuptools import setup
 setup(
     name='Flask-ThriftClient',
     version='0.1',
-    url='http://bitbucket.org/chub/FIXME',
+    url='https://bitbucket.org/chub/flask-thriftclient',
     license='BSD',
     author='Pierre Lamot',
     author_email='pierre.lamot@yahoo.fr',
