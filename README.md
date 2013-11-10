@@ -1,7 +1,7 @@
-# Flask Thriftluent
+# Flask ThriftClient
 
 This extension provide a simple intergration with remote thrift
-services. It allows to easily connect to remote Thrift services.
+services.
 
 ~~~python
 from flask import Flask
@@ -22,14 +22,14 @@ def home():
 
 ## Transport
 
-thrift endpoints are defined in the configuration variable
-**THRIFTCLIENT_TRANSPORT** as an URL. The default transport is
+Thrift endpoints are defined in the configuration variable
+THRIFTCLIENT_TRANSPORT as an URL. The default transport is
 tcp://localhost:9090 
 
 Available url schemes are:
 
-tcp: use TCP socket as transport, you have to define the server address and
-port. If the port isn't defined, 9090 will be used  
+tcp: use TCP socket as transport, you have to define the server
+address and port. If the port isn't defined, 9090 will be used  
 
 Example:
 
@@ -43,7 +43,7 @@ http: use HTTP protocol as transport. Examples:
   * http://myservice.local/
 
 unix: use unix sockets as transport, as this scheme follow URI format,
-it **MUST** have either no or three "/" before the socket path 
+it *MUST* have either no or three "/" before the socket path 
 
   * unix:///tmp/mysocket #absolute path
 
@@ -75,7 +75,7 @@ THRIFTCLIENT_SSL_VALIDATE: True if the certificate has to be validated
 
 THRIFTCLIENT_SSL_CA_CERTS: path to the SSL certificate (default None)
 
-Note that you **MUST** set one of theses options:
+Note that you *MUST* set one of theses options:
 
 ~~~python
 app.config["THRIFTCLIENT_SSL_VALIDATE"] = False
@@ -92,7 +92,7 @@ app.config["THRIFTCLIENT_TRANSPORT"] = "https://127.0.0.1/"
 ## Protocol
 
 You may define which procotol must be use by setting the parametter
-**THRIFTCLIENT_PROTOCOL**. The default protocol is Binary. 
+*THRIFTCLIENT_PROTOCOL*. The default protocol is Binary. 
 
 Available parametters are: 
 
