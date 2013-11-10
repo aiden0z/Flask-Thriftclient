@@ -15,7 +15,7 @@ class ThriftClient(object):
 	"""
 # Flask ThriftClient
 
-This extension provide a simple intergration with 
+This extension provide a simple intergration with
 [Thrift](https://thrift.apache.org/) RPC server.
 
 ~~~python
@@ -39,12 +39,12 @@ def home():
 
 Thrift endpoints are defined in the configuration variable
 THRIFTCLIENT_TRANSPORT as an URL. The default transport is
-tcp://localhost:9090 
+tcp://localhost:9090
 
 Available url schemes are:
 
 tcp: use TCP socket as transport, you have to define the server
-address and port. If the port isn't defined, 9090 will be used  
+address and port. If the port isn't defined, 9090 will be used
 
 Example:
 
@@ -58,7 +58,7 @@ http: use HTTP protocol as transport. Examples:
   * http://myservice.local/
 
 unix: use unix sockets as transport, as this scheme follow URI format,
-it *MUST* have either no or three "/" before the socket path 
+it *MUST* have either no or three "/" before the socket path
 
   * unix:///tmp/mysocket #absolute path
 
@@ -107,9 +107,9 @@ app.config["THRIFTCLIENT_TRANSPORT"] = "https://127.0.0.1/"
 ## Protocol
 
 You may define which procotol must be use by setting the parametter
-*THRIFTCLIENT_PROTOCOL*. The default protocol is Binary. 
+*THRIFTCLIENT_PROTOCOL*. The default protocol is Binary.
 
-Available parametters are: 
+Available parametters are:
 
 ThriftClient.BINARY or "BINARY" : use the binary protocol
 
@@ -183,17 +183,17 @@ THRIFTCLIENT_ZLIB: use zlib compressed transport (default False)
 		elif uri.scheme == "tcps":
 			port = uri.port or 9090
 			self.transport = TSSLSocket.TSSLSocket(
-				host = uri.hostname,
-				port = port,
-				validate = config["THRIFTCLIENT_SSL_VALIDATE"],
-				ca_certs = config["THRIFTCLIENT_SSL_CA_CERTS"],
+				host=uri.hostname,
+				port=port,
+				validate=config["THRIFTCLIENT_SSL_VALIDATE"],
+				ca_certs=config["THRIFTCLIENT_SSL_CA_CERTS"],
 			)
 		elif uri.scheme in ["http", "https"]:
 			self.transport = THttpClient.THttpClient(config["THRIFTCLIENT_TRANSPORT"])
 		elif uri.scheme == "unix":
-                        if uri.hostname is not None:
+			if uri.hostname is not None:
 				raise RuntimeError("unix socket MUST starts with either unix:/ or unix:///")
-			self.transport = TSocket.TSocket(unix_socket = uri.path)
+			self.transport = TSocket.TSocket(unix_socket=uri.path)
 		elif uri.scheme == "unixs":
 			if uri.hostname is not None:
 				raise RuntimeError("unixs socket MUST starts with either unixs:/ or unixs:///")
