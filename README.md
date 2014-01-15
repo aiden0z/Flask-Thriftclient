@@ -43,7 +43,7 @@ http: use HTTP protocol as transport. Examples:
   * http://myservice.local/
 
 unix: use unix sockets as transport, as this scheme follow URI format,
-it *MUST* have either no or three "/" before the socket path 
+it *MUST* have either no or two "/" before the socket path (absolute or relative)
 
   * unix:///tmp/mysocket #absolute path
 
@@ -98,7 +98,7 @@ Available parametters are:
 
 ThriftClient.BINARY or "BINARY" : use the binary protocol
 
-ThriftClient.COMPACT or "COMPACR" : use the compact protocol
+ThriftClient.COMPACT or "COMPACT" : use the compact protocol
 
 ThriftClient.JSON or "JSON" : use the JSON protocol. note that this
 protocol is only available for thrift >= 0.9.1
