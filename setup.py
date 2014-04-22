@@ -7,9 +7,13 @@ Adds thrift client support to your Flask application
 
 """
 
+import os
 from setuptools import setup
 
-with open('README.md') as fd:
+here = os.path.dirname(__file__)
+readme_path = os.path.join(here, 'README.md')
+long_description = ""
+with open(readme_path) as fd:
 	long_description = fd.read()
 
 
