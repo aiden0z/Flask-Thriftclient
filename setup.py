@@ -11,7 +11,7 @@ import os
 from setuptools import setup
 
 here = os.path.dirname(__file__)
-readme_path = os.path.join(here, 'README.md')
+readme_path = os.path.join(here, 'README.rst')
 long_description = ""
 with open(readme_path) as fd:
 	long_description = fd.read()

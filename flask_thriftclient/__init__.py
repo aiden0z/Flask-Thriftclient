@@ -21,7 +21,7 @@ Introduction
 ============
 
 This extension provide a simple intergration with
-[Thrift](https://thrift.apache.org/) RPC server.
+`Thrift <https://thrift.apache.org>`_ RPC server.
 
 .. code:: python
 
@@ -100,7 +100,7 @@ THRIFTCLIENT_SSL_CA_CERTS: path to the SSL certificate (default None)
 
 Note that you *MUST* set one of theses options:
 
-..code:: python
+.. code:: python
 
     app.config["THRIFTCLIENT_SSL_VALIDATE"] = False
     app.config["THRIFTCLIENT_TRANSPORT"] = "https://127.0.0.1/"
@@ -159,7 +159,7 @@ connections:
             return data
 
     @app.route("/with_manual_connection")
-    def /with_manual_connection():
+    def with_manual_connection():
         thriftclient.transport.open()
         data = thriftclient.client.mymethod()
         thriftclient.transport.close()
