@@ -19,7 +19,7 @@ with open(readme_path) as fd:
 
 setup(
 	name='Flask-ThriftClient',
-	version='0.1.1',
+	version='0.2.0',
 	url='https://bitbucket.org/chub/flask-thriftclient',
 	license='BSD',
 	author='Pierre Lamot',
