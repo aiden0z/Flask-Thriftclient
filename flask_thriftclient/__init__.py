@@ -9,33 +9,40 @@ except ImportError:
 	HAS_JSON_PROTOCOL = False
 
 from urlparse import urlparse
-
+from functools import wraps
+from contextlib import contextmanager
 
 class ThriftClient(object):
 	"""
-# Flask ThriftClient
+Flask ThriftClient
+##################
+
+Introduction
+============
 
 This extension provide a simple intergration with
 [Thrift](https://thrift.apache.org/) RPC server.
 
-~~~python
-from flask import Flask
-from flask_thriftclient import ThriftClient
+.. code:: python
 
-from MyGeneratedThriftCode import MyService
+    from flask import Flask
+    from flask_thriftclient import ThriftClient
 
-app = Flask(__name__)
-app.config["THRIFTCLIENT_TRANSPORT"] = "tcp://127.0.0.1:9090"
+    from MyGeneratedThriftCode import MyService
 
-thriftclient = ThriftClient(MyService.Client, app)
+    app = Flask(__name__)
+    app.config["THRIFTCLIENT_TRANSPORT"] = "tcp://127.0.0.1:9090"
 
-@app.route("/")
-def home():
-    data = thriftclient.client.mymethod()
-    return data
-~~~
+    thriftclient = ThriftClient(MyService.Client, app)
 
-## Transport
+    @app.route("/")
+    def home():
+        data = thriftclient.client.mymethod()
+        return data
+
+
+Transport
+=========
 
 Thrift endpoints are defined in the configuration variable
 THRIFTCLIENT_TRANSPORT as an URL. The default transport is
@@ -66,7 +73,8 @@ it *MUST* have either no or three "/" before the socket path
 
   * unix:./mysocket #relative path
 
-## SSL
+SSL
+===
 
 You may set SSL version of transport communications by using *'s'*
 version of url scheme:
@@ -92,19 +100,18 @@ THRIFTCLIENT_SSL_CA_CERTS: path to the SSL certificate (default None)
 
 Note that you *MUST* set one of theses options:
 
-~~~python
-app.config["THRIFTCLIENT_SSL_VALIDATE"] = False
-app.config["THRIFTCLIENT_TRANSPORT"] = "https://127.0.0.1/"
+..code:: python
 
-#or
+    app.config["THRIFTCLIENT_SSL_VALIDATE"] = False
+    app.config["THRIFTCLIENT_TRANSPORT"] = "https://127.0.0.1/"
 
-app.config["THRIFTCLIENT_SSL_CA_CERTS"] = "./cacert.pem"
-app.config["THRIFTCLIENT_TRANSPORT"] = "https://127.0.0.1/"
+    #or
 
-~~~
+    app.config["THRIFTCLIENT_SSL_CA_CERTS"] = "./cacert.pem"
+    app.config["THRIFTCLIENT_TRANSPORT"] = "https://127.0.0.1/"
 
-
-## Protocol
+Protocol
+========
 
 You may define which procotol must be use by setting the parametter
 *THRIFTCLIENT_PROTOCOL*. The default protocol is Binary.
@@ -113,13 +120,53 @@ Available parametters are:
 
 ThriftClient.BINARY or "BINARY" : use the binary protocol
 
-ThriftClient.COMPACT or "COMPACR" : use the compact protocol
+ThriftClient.COMPACT or "COMPACT" : use the compact protocol
 
 ThriftClient.JSON or "JSON" : use the JSON protocol. note that this
 protocol is only available for thrift >= 0.9.1
 
+Connection
+==========
 
-## Options
+By default the application will open then close the transport for each request
+This can be overriden by setting *THRIFTCLIENT_ALWAYS_CONNECT* to False
+
+when THRIFTCLIENT_ALWAYS_CONNECT is set to False there is 3 ways to handle your
+connections:
+
+- you can call transport.close and transport.open manually
+- you can use the autoconnect decorator
+- you can use the connect "with" context
+
+.. code:: python
+
+    app = Flask(__name__)
+    app.config["THRIFTCLIENT_TRANSPORT"] = "tcp://127.0.0.1:9090"
+    app.config["THRIFTCLIENT_ALWAYS_CONNECT"] = False
+
+    thriftclient = ThriftClient(MyService.Client, app)
+
+    @app.route("/with_autoconnect")
+    @thriftclient.autoconnect
+    def with_autoconnect():
+        data = thriftclient.client.mymethod()
+        return data
+
+    @app.route("/with_context")
+    def with_context():
+        with thriftclient.connect():
+            data = thriftclient.client.mymethod()
+            return data
+
+    @app.route("/with_manual_connection")
+    def /with_manual_connection():
+        thriftclient.transport.open()
+        data = thriftclient.client.mymethod()
+        thriftclient.transport.close()
+        return data
+
+Options
+=======
 
 Other options are:
 
@@ -139,6 +186,7 @@ THRIFTCLIENT_ZLIB: use zlib compressed transport (default False)
 		self.transport = None
 		self.client = None
 		self.config = config
+		self.alwaysConnect = True
 		if app is not None:
 			self.init_app(app)
 
@@ -157,20 +205,52 @@ THRIFTCLIENT_ZLIB: use zlib compressed transport (default False)
 		config.setdefault("THRIFTCLIENT_BUFFERED", False)
 		config.setdefault("THRIFTCLIENT_ZLIB", False)
 
+		config.setdefault("THRIFTCLIENT_ALWAYS_CONNECT", True)
+
 		self._set_client(app, config)
 
-		@app.before_request
-		def before_request():
-			assert(self.client is not None)
-			assert(self.transport is not None)
-			try:
-				self.transport.open()
-			except TTransport.TTransportException:
-				raise RuntimeError("Unable to connect to thrift server")
+		if self.alwaysConnect:
+			@app.before_request
+			def before_request():
+				assert(self.client is not None)
+				assert(self.transport is not None)
+				try:
+					self.transport.open()
+				except TTransport.TTransportException:
+					raise RuntimeError("Unable to connect to thrift server")
 
-		@app.teardown_request
-		def after_request(response):
-			self.transport.close()
+			@app.teardown_request
+			def after_request(response):
+				self.transport.close()
+
+	@contextmanager
+	def connect(self):
+		assert(self.client is not None)
+		assert(self.transport is not None)
+
+		try:
+			self.transport.open()
+		except TTransport.TTransportException:
+			raise RuntimeError("Unable to connect to thrift server")
+
+		yield
+
+		self.transport.close()
+
+
+	def autoconnect(self, func):
+		"""
+		when using THRIFTCLIENT_ALWAYS_CONNECT at false, this decorator allows
+		to connect to the thrift service automatically for a single function
+		"""
+		@wraps(func)
+		def onCall(*args, **kwargs):
+			#we don't want to connect twice
+			if self.alwaysConnect:
+				return func(*args, **kwargs)
+			with self.connect():
+				return func(*args, **kwargs)
+		return onCall
 
 	def _set_client(self, app, config):
 		#configure thrift thransport
@@ -228,3 +308,6 @@ THRIFTCLIENT_ZLIB: use zlib compressed transport (default False)
 
 		#create the client from the interface
 		self.client = self.interface(self.protocol)
+
+		#configure auto connection
+		self.alwaysConnect = config["THRIFTCLIENT_ALWAYS_CONNECT"]

@@ -71,7 +71,7 @@ class TestSequenceFunctions(unittest.TestCase):
         client = ThriftClient(StubClient, self.app)
         self.assertTrue(isinstance(client.transport, TSocket.TSocket))
         self.assertEquals(client.transport._unix_socket, "/tmp/testunixsocket")
-        
+
     def test_transport_unix_2(self):
         self.app.config["THRIFTCLIENT_TRANSPORT"] = "unix:/tmp/testunixsocket"
         client = ThriftClient(StubClient, self.app)
@@ -82,7 +82,7 @@ class TestSequenceFunctions(unittest.TestCase):
         self.app.config["THRIFTCLIENT_TRANSPORT"] = "unix://tmp/testunixsocket"
         with self.assertRaises(RuntimeError):
             client = ThriftClient(StubClient, self.app)
-    
+
     def test_transport_http(self):
         self.app.config["THRIFTCLIENT_TRANSPORT"] = "http://foo.bar.com:8080/end/point"
         client = ThriftClient(StubClient, self.app)
@@ -141,7 +141,7 @@ class TestSequenceFunctions(unittest.TestCase):
 
         with self.assertRaises(IOError):
             client = ThriftClient(StubClient, self.app)
-    
+
     def test_transport_tcps_unreadable_cert(self):
         self.app.config["THRIFTCLIENT_TRANSPORT"] = "tcps://192.168.0.42"
         self.app.config["THRIFTCLIENT_SSL_VALIDATE"] = True
@@ -190,18 +190,18 @@ class TestSequenceFunctions(unittest.TestCase):
     def test_protocol_compact(self):
         self.app.config["THRIFTCLIENT_PROTOCOL"] = ThriftClient.COMPACT
         client = ThriftClient(StubClient, self.app)
-        self.assertTrue(isinstance(client.protocol, TCompactProtocol.TCompactProtocol))  
+        self.assertTrue(isinstance(client.protocol, TCompactProtocol.TCompactProtocol))
 
     if HAS_JSON_PROTOCOL:
         def test_protocol_json(self):
             self.app.config["THRIFTCLIENT_PROTOCOL"] = ThriftClient.JSON
             client = ThriftClient(StubClient, self.app)
-            self.assertTrue(isinstance(client.protocol, TJSONProtocol.TJSONProtocol))    
+            self.assertTrue(isinstance(client.protocol, TJSONProtocol.TJSONProtocol))
 
-        
+
     def test_connection(self):
         """
-        http connections aren't really opened, so we can tests 
+        http connections aren't really opened, so we can tests
         them without a server
         """
         self.app.config["THRIFTCLIENT_TRANSPORT"] = "http://localhost:8735"
@@ -228,6 +228,61 @@ class TestSequenceFunctions(unittest.TestCase):
         ret = testclient.get("/testme")
         self.assertEquals(ret.status_code, 500)
         self.assertFalse(client.transport.isOpen())
+
+    def test_no_alwaysconnect(self):
+        self.app.config["THRIFTCLIENT_TRANSPORT"] = "tcp://localhost:8735"
+        self.app.config["THRIFTCLIENT_ALWAYS_CONNECT"] = False
+        client = ThriftClient(StubClient, self.app)
+
+        @self.app.route("/testme")
+        def testme():
+            return "KO" if client.transport.isOpen() else "OK"
+
+        testclient = self.app.test_client()
+        ret = testclient.get("/testme")
+        self.assertEquals(ret.data, "OK")
+        self.assertFalse(client.transport.isOpen())
+
+    def test_connect_ctx(self):
+        self.app.config["THRIFTCLIENT_TRANSPORT"] = "http://localhost:8735"
+        self.app.config["THRIFTCLIENT_ALWAYS_CONNECT"] = False
+        client = ThriftClient(StubClient, self.app)
+
+        with client.connect():
+            self.assertTrue(client.transport.isOpen())
+        self.assertFalse(client.transport.isOpen())
+
+    def test_autoconnect(self):
+        self.app.config["THRIFTCLIENT_TRANSPORT"] = "http://localhost:8735"
+        self.app.config["THRIFTCLIENT_ALWAYS_CONNECT"] = False
+        client = ThriftClient(StubClient, self.app)
+
+        @self.app.route("/testme")
+        @client.autoconnect
+        def testme():
+            return "OK" if client.transport.isOpen() else "KO"
+
+        testclient = self.app.test_client()
+        ret = testclient.get("/testme")
+        self.assertEquals(ret.data, "OK")
+        self.assertFalse(client.transport.isOpen())
+
+    def test_autoconnect_with_alwaysconnect(self):
+        self.app.config["THRIFTCLIENT_TRANSPORT"] = "http://localhost:8735"
+        self.app.config["THRIFTCLIENT_ALWAYS_CONNECT"] = False
+        client = ThriftClient(StubClient, self.app)
+
+        @self.app.route("/testme")
+        @client.autoconnect
+        def testme():
+            return "OK" if client.transport.isOpen() else "KO"
+
+        testclient = self.app.test_client()
+        ret = testclient.get("/testme")
+        self.assertEquals(ret.data, "OK")
+        self.assertFalse(client.transport.isOpen())
+
+
 
 if __name__ == "__main__":
     unittest.main()
