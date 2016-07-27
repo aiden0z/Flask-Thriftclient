@@ -1,20 +1,17 @@
-from thrift.transport import TSocket, THttpClient, TTransport, TZlibTransport, TSSLSocket
-from thrift.protocol import TBinaryProtocol, TCompactProtocol
-try:
-	#only available from thrift >= 0.9.1
-	from thrift.protocol import TJSONProtocol
+# -*- coding:utf-8 -*-
 
-	HAS_JSON_PROTOCOL = True
-except ImportError:
-	HAS_JSON_PROTOCOL = False
+from thrift.transport import TSocket, THttpClient, TTransport, TZlibTransport, TSSLSocket
+from thrift.protocol import TBinaryProtocol, TCompactProtocol, TJSONProtocol
+
 
 from urlparse import urlparse
 from functools import wraps
 from contextlib import contextmanager
 
+
 class ThriftClient(object):
-	"""
-Flask ThriftClient
+    """
+Flask ThriftClient (fork from https://bitbucket.org/chub/flask-thriftclient)
 ##################
 
 Introduction
@@ -25,20 +22,20 @@ This extension provide a simple intergration with
 
 .. code:: python
 
-    from flask import Flask
-    from flask_thriftclient import ThriftClient
+from flask import Flask
+from flask_thriftclient import ThriftClient
 
-    from MyGeneratedThriftCode import MyService
+from MyGeneratedThriftCode import MyService
 
-    app = Flask(__name__)
-    app.config["THRIFTCLIENT_TRANSPORT"] = "tcp://127.0.0.1:9090"
+app = Flask(__name__)
+app.config["THRIFTCLIENT_TRANSPORT"] = "tcp://127.0.0.1:9090"
 
-    thriftclient = ThriftClient(MyService.Client, app)
+thriftclient = ThriftClient(MyService.Client, app)
 
-    @app.route("/")
-    def home():
-        data = thriftclient.client.mymethod()
-        return data
+@app.route("/")
+def home():
+    data = thriftclient.client.mymethod()
+    return data
 
 
 Transport
@@ -55,23 +52,23 @@ address and port. If the port isn't defined, 9090 will be used
 
 Example:
 
-  * tcp://127.0.0.1
+* tcp://127.0.0.1
 
-  * tcp://localhost:1234/
+* tcp://localhost:1234/
 
 
 http: use HTTP protocol as transport. Examples:
 
-  * http://myservice.local/
+* http://myservice.local/
 
 unix: use unix sockets as transport, as this scheme follow URI format,
 it *MUST* have either no or three "/" before the socket path
 
-  * unix:///tmp/mysocket #absolute path
+* unix:///tmp/mysocket #absolute path
 
-  * unix:/tmp/mysocket #absolute path
+* unix:/tmp/mysocket #absolute path
 
-  * unix:./mysocket #relative path
+* unix:./mysocket #relative path
 
 SSL
 ===
@@ -85,11 +82,11 @@ unix <=> unixs
 
 examples:
 
-  * https://myserver/
+* https://myserver/
 
-  * unixs:/tmp/mysocket
+* unixs:/tmp/mysocket
 
-  * tcps://localhost:5533/
+* tcps://localhost:5533/
 
 Two options are related to SSL transport:
 
@@ -102,13 +99,13 @@ Note that you *MUST* set one of theses options:
 
 .. code:: python
 
-    app.config["THRIFTCLIENT_SSL_VALIDATE"] = False
-    app.config["THRIFTCLIENT_TRANSPORT"] = "https://127.0.0.1/"
+app.config["THRIFTCLIENT_SSL_VALIDATE"] = False
+app.config["THRIFTCLIENT_TRANSPORT"] = "https://127.0.0.1/"
 
-    #or
+#or
 
-    app.config["THRIFTCLIENT_SSL_CA_CERTS"] = "./cacert.pem"
-    app.config["THRIFTCLIENT_TRANSPORT"] = "https://127.0.0.1/"
+app.config["THRIFTCLIENT_SSL_CA_CERTS"] = "./cacert.pem"
+app.config["THRIFTCLIENT_TRANSPORT"] = "https://127.0.0.1/"
 
 Protocol
 ========
@@ -140,30 +137,30 @@ connections:
 
 .. code:: python
 
-    app = Flask(__name__)
-    app.config["THRIFTCLIENT_TRANSPORT"] = "tcp://127.0.0.1:9090"
-    app.config["THRIFTCLIENT_ALWAYS_CONNECT"] = False
+app = Flask(__name__)
+app.config["THRIFTCLIENT_TRANSPORT"] = "tcp://127.0.0.1:9090"
+app.config["THRIFTCLIENT_ALWAYS_CONNECT"] = False
 
-    thriftclient = ThriftClient(MyService.Client, app)
+thriftclient = ThriftClient(MyService.Client, app)
 
-    @app.route("/with_autoconnect")
-    @thriftclient.autoconnect
-    def with_autoconnect():
+@app.route("/with_autoconnect")
+@thriftclient.autoconnect
+def with_autoconnect():
+    data = thriftclient.client.mymethod()
+    return data
+
+@app.route("/with_context")
+def with_context():
+    with thriftclient.connect():
         data = thriftclient.client.mymethod()
         return data
 
-    @app.route("/with_context")
-    def with_context():
-        with thriftclient.connect():
-            data = thriftclient.client.mymethod()
-            return data
-
-    @app.route("/with_manual_connection")
-    def with_manual_connection():
-        thriftclient.transport.open()
-        data = thriftclient.client.mymethod()
-        thriftclient.transport.close()
-        return data
+@app.route("/with_manual_connection")
+def with_manual_connection():
+    thriftclient.transport.open()
+    data = thriftclient.client.mymethod()
+    thriftclient.transport.close()
+    return data
 
 Options
 =======
@@ -174,140 +171,145 @@ THRIFTCLIENT_BUFFERED: use buffered transport (default False)
 
 THRIFTCLIENT_ZLIB: use zlib compressed transport (default False)
 
-	"""
-	BINARY = "BINARY"
-	COMPACT = "COMPACT"
-	if HAS_JSON_PROTOCOL:
-		JSON = "JSON"
+THRIFTCLIENT_FRAMED: use framed transport (defualt False)
 
-	def __init__(self, interface, app=None, config=None):
-		self.interface = interface
-		self.protocol = None
-		self.transport = None
-		self.client = None
-		self.config = config
-		self.alwaysConnect = True
-		if app is not None:
-			self.init_app(app)
+    """
+    BINARY = "BINARY"
+    COMPACT = "COMPACT"
+    JSON = "JSON"
 
-	def init_app(self, app, config=None):
-		if not config:
-			config = self.config
-		if not config:
-			config = app.config
+    def __init__(self, interface, app=None, config=None):
+        self.interface = interface
+        self.protocol = None
+        self.transport = None
+        self.client = None
+        self.config = config
+        self.alwaysConnect = True
+        if app is not None:
+            self.init_app(app)
 
-		config.setdefault("THRIFTCLIENT_TRANSPORT", "tcp://localhost:9090")
-		config.setdefault("THRIFTCLIENT_PROTOCOL", ThriftClient.BINARY)
+    def init_app(self, app, config=None):
+        if not config:
+            config = self.config
+        if not config:
+            config = app.config
 
-		config.setdefault("THRIFTCLIENT_SSL_VALIDATE", True)
-		config.setdefault("THRIFTCLIENT_SSL_CA_CERTS", None)
+        config.setdefault("THRIFTCLIENT_TRANSPORT", "tcp://localhost:9090")
+        config.setdefault("THRIFTCLIENT_PROTOCOL", ThriftClient.BINARY)
 
-		config.setdefault("THRIFTCLIENT_BUFFERED", False)
-		config.setdefault("THRIFTCLIENT_ZLIB", False)
+        config.setdefault("THRIFTCLIENT_SSL_VALIDATE", True)
+        config.setdefault("THRIFTCLIENT_SSL_CA_CERTS", None)
 
-		config.setdefault("THRIFTCLIENT_ALWAYS_CONNECT", True)
+        config.setdefault("THRIFTCLIENT_BUFFERED", False)
+        config.setdefault("THRIFTCLIENT_ZLIB", False)
 
-		self._set_client(app, config)
+        config.setdefault("THRIFTCLIENT_ALWAYS_CONNECT", True)
 
-		if self.alwaysConnect:
-			@app.before_request
-			def before_request():
-				assert(self.client is not None)
-				assert(self.transport is not None)
-				try:
-					self.transport.open()
-				except TTransport.TTransportException:
-					raise RuntimeError("Unable to connect to thrift server")
+        self._set_client(app, config)
 
-			@app.teardown_request
-			def after_request(response):
-				self.transport.close()
+        if self.alwaysConnect:
+            @app.before_request
+            def before_request():
+                assert(self.client is not None)
+                assert(self.transport is not None)
+                try:
+                    self.transport.open()
+                except TTransport.TTransportException:
+                    raise RuntimeError("Unable to connect to thrift server")
 
-	@contextmanager
-	def connect(self):
-		assert(self.client is not None)
-		assert(self.transport is not None)
+            @app.teardown_request
+            def after_request(response):
+                self.transport.close()
 
-		try:
-			self.transport.open()
-		except TTransport.TTransportException:
-			raise RuntimeError("Unable to connect to thrift server")
+    @contextmanager
+    def connect(self):
+        assert(self.client is not None)
+        assert(self.transport is not None)
 
-		yield
+        try:
+            self.transport.open()
+        except TTransport.TTransportException:
+            raise RuntimeError("Unable to connect to thrift server")
 
-		self.transport.close()
+        yield
 
+        self.transport.close()
 
-	def autoconnect(self, func):
-		"""
-		when using THRIFTCLIENT_ALWAYS_CONNECT at false, this decorator allows
-		to connect to the thrift service automatically for a single function
-		"""
-		@wraps(func)
-		def onCall(*args, **kwargs):
-			#we don't want to connect twice
-			if self.alwaysConnect:
-				return func(*args, **kwargs)
-			with self.connect():
-				return func(*args, **kwargs)
-		return onCall
+    def autoconnect(self, func):
+        """
+        when using THRIFTCLIENT_ALWAYS_CONNECT at false, this decorator allows
+        to connect to the thrift service automatically for a single function
+        """
+        @wraps(func)
+        def onCall(*args, **kwargs):
+            # we don't want to connect twice
+            if self.alwaysConnect:
+                return func(*args, **kwargs)
+            with self.connect():
+                return func(*args, **kwargs)
+        return onCall
 
-	def _set_client(self, app, config):
-		#configure thrift thransport
-		if config["THRIFTCLIENT_TRANSPORT"] is None:
-			raise RuntimeError("THRIFTCLIENT_TRANSPORT MUST be specified")
-		uri = urlparse(config["THRIFTCLIENT_TRANSPORT"])
-		if uri.scheme == "tcp":
-			port = uri.port or 9090
-			self.transport = TSocket.TSocket(uri.hostname, port)
-		elif uri.scheme == "tcps":
-			port = uri.port or 9090
-			self.transport = TSSLSocket.TSSLSocket(
-				host=uri.hostname,
-				port=port,
-				validate=config["THRIFTCLIENT_SSL_VALIDATE"],
-				ca_certs=config["THRIFTCLIENT_SSL_CA_CERTS"],
-			)
-		elif uri.scheme in ["http", "https"]:
-			self.transport = THttpClient.THttpClient(config["THRIFTCLIENT_TRANSPORT"])
-		elif uri.scheme == "unix":
-			if uri.hostname is not None:
-				raise RuntimeError("unix socket MUST starts with either unix:/ or unix:///")
-			self.transport = TSocket.TSocket(unix_socket=uri.path)
-		elif uri.scheme == "unixs":
-			if uri.hostname is not None:
-				raise RuntimeError("unixs socket MUST starts with either unixs:/ or unixs:///")
-			self.transport = TSSLSocket.TSSLSocket(
-				validate = config["THRIFTCLIENT_SSL_VALIDATE"],
-				ca_certs  = config["THRIFTCLIENT_SSL_CA_CERTS"],
-				unix_socket = uri.path)
-		else:
-			raise RuntimeError(
-				"invalid configuration for THRIFTCLIENT_TRANSPORT: {transport}"
-				.format(transport = config["THRIFTCLIENT_TRANSPORT"])
-				)
+    def _set_client(self, app, config):
+        # configure thrift thransport
+        if config["THRIFTCLIENT_TRANSPORT"] is None:
+            raise RuntimeError("THRIFTCLIENT_TRANSPORT MUST be specified")
+        uri = urlparse(config["THRIFTCLIENT_TRANSPORT"])
+        if uri.scheme == "tcp":
+            port = uri.port or 9090
+            self.transport = TSocket.TSocket(uri.hostname, port)
+        elif uri.scheme == "tcps":
+            port = uri.port or 9090
+            self.transport = TSSLSocket.TSSLSocket(
+                host=uri.hostname,
+                port=port,
+                validate=config["THRIFTCLIENT_SSL_VALIDATE"],
+                ca_certs=config["THRIFTCLIENT_SSL_CA_CERTS"],
+            )
+        elif uri.scheme in ["http", "https"]:
+            self.transport = THttpClient.THttpClient(
+                config["THRIFTCLIENT_TRANSPORT"])
+        elif uri.scheme == "unix":
+            if uri.hostname is not None:
+                raise RuntimeError(
+                    "unix socket MUST starts with either unix:/ or unix:///")
+            self.transport = TSocket.TSocket(unix_socket=uri.path)
+        elif uri.scheme == "unixs":
+            if uri.hostname is not None:
+                raise RuntimeError(
+                    "unixs socket MUST starts with either unixs:/ or unixs:///")
+            self.transport = TSSLSocket.TSSLSocket(
+                validate=config["THRIFTCLIENT_SSL_VALIDATE"],
+                ca_certs=config["THRIFTCLIENT_SSL_CA_CERTS"],
+                unix_socket=uri.path)
+        else:
+            raise RuntimeError(
+                "invalid configuration for THRIFTCLIENT_TRANSPORT: {transport}"
+                .format(transport=config["THRIFTCLIENT_TRANSPORT"])
+            )
 
-		#configure additionnal protocol layers
-		if config["THRIFTCLIENT_BUFFERED"] == True:
-			self.transport = TTransport.TBufferedTransport(self.transport)
-		if config["THRIFTCLIENT_ZLIB"] == True:
-			self.transport = TZlibTransport.TZlibTransport(self.transport)
+        # configure additionnal protocol layers
+        if config["THRIFTCLIENT_BUFFERED"] == True:
+            self.transport = TTransport.TBufferedTransport(self.transport)
+        if config["THRIFTCLIENT_ZLIB"] == True:
+            self.transport = TZlibTransport.TZlibTransport(self.transport)
+        if config["THRIFTCLIENT_FRAMED"] == True:
+            self.transport = TTransport.TFramedTransport(self.transport)
 
-		#configure thrift protocol
-		if config["THRIFTCLIENT_PROTOCOL"] == ThriftClient.BINARY:
-			self.protocol = TBinaryProtocol.TBinaryProtocol(self.transport)
-		elif config["THRIFTCLIENT_PROTOCOL"] == ThriftClient.COMPACT:
-			self.protocol = TCompactProtocol.TCompactProtocol(self.transport)
-		elif HAS_JSON_PROTOCOL and config["THRIFTCLIENT_PROTOCOL"] == ThriftClient.JSON:
-			self.protocol = TJSONProtocol.TJSONProtocol(self.transport)
-		else:
-			raise RuntimeError(
-				"invalid configuration for THRIFTCLIENT_PROTOCOL: {protocol}"
-				.format(protocol = config["THRIFTCLIENT_PROTOCOL"])
-				)
+        # configure thrift protocol
+        if config["THRIFTCLIENT_PROTOCOL"] == ThriftClient.BINARY:
+            self.protocol = TBinaryProtocol.TBinaryProtocol(self.transport)
+        elif config["THRIFTCLIENT_PROTOCOL"] == ThriftClient.COMPACT:
+            self.protocol = TCompactProtocol.TCompactProtocol(self.transport)
+        elif config["THRIFTCLIENT_PROTOCOL"] == ThriftClient.JSON:
+            self.protocol = TJSONProtocol.TJSONProtocol(self.transport)
+        else:
+            raise RuntimeError(
+                "invalid configuration for THRIFTCLIENT_PROTOCOL: {protocol}"
+                .format(protocol=config["THRIFTCLIENT_PROTOCOL"])
+            )
 
-		#create the client from the interface
-		self.client = self.interface(self.protocol)
+        # create the client from the interface
+        self.client = self.interface(self.protocol)
 
-		#configure auto connection
-		self.alwaysConnect = config["THRIFTCLIENT_ALWAYS_CONNECT"]
+        # configure auto connection
+        self.alwaysConnect = config["THRIFTCLIENT_ALWAYS_CONNECT"]

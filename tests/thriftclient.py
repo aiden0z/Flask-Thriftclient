@@ -1,40 +1,39 @@
+# -*- coding:utf-8 -*-
+
 from thrift.transport import *
 from thrift.transport import TSSLSocket
 from thrift.protocol import *
 from thrift.protocol import TCompactProtocol
-try:
-    from thrift.protocol import TJSONProtocol
-    HAS_JSON_PROTOCOL = True
-except ImportError:
-    HAS_JSON_PROTOCOL = False
-from thrift.server import TServer
 
 import unittest
 
 from flask import Flask
 from flask_thriftclient import ThriftClient
 
+
 class StubClient:
+
     def __init__(self, protocol):
         pass
 
+
 class TestSequenceFunctions(unittest.TestCase):
+
     def setUp(self):
         self.app = Flask(__name__)
 
     def test_default_values(self):
         client = ThriftClient(StubClient, self.app)
         self.assertTrue(isinstance(client.transport, TSocket.TSocket))
-        self.assertTrue(isinstance(client.protocol, TBinaryProtocol.TBinaryProtocol))
+        self.assertTrue(isinstance(client.protocol,
+                                   TBinaryProtocol.TBinaryProtocol))
         self.assertEquals(client.transport.port, 9090)
         self.assertEquals(client.transport.host, "localhost")
-
 
     def test_transport_bad_scheme(self):
         self.app.config["THRIFTCLIENT_TRANSPORT"] = "bad://whatever"
         with self.assertRaises(RuntimeError):
             client = ThriftClient(StubClient, self.app)
-
 
     def test_transport_none_transport(self):
         self.app.config["THRIFTCLIENT_TRANSPORT"] = None
@@ -51,7 +50,6 @@ class TestSequenceFunctions(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             client = ThriftClient(StubClient, self.app)
 
-
     def test_transport_tcp_noport(self):
         self.app.config["THRIFTCLIENT_TRANSPORT"] = "tcp://192.168.0.42"
         client = ThriftClient(StubClient, self.app)
@@ -60,14 +58,16 @@ class TestSequenceFunctions(unittest.TestCase):
         self.assertEquals(client.transport.host, "192.168.0.42")
 
     def test_transport_tcp_longurl(self):
-        self.app.config["THRIFTCLIENT_TRANSPORT"] = "tcp://mydomain.foo.com:5921/whatever?its=21;not=zrzer#used"
+        self.app.config[
+            "THRIFTCLIENT_TRANSPORT"] = "tcp://mydomain.foo.com:5921/whatever?its=21;not=zrzer#used"
         client = ThriftClient(StubClient, self.app)
         self.assertTrue(isinstance(client.transport, TSocket.TSocket))
         self.assertEquals(client.transport.port, 5921)
         self.assertEquals(client.transport.host, "mydomain.foo.com")
 
     def test_transport_unix_1(self):
-        self.app.config["THRIFTCLIENT_TRANSPORT"] = "unix:///tmp/testunixsocket"
+        self.app.config[
+            "THRIFTCLIENT_TRANSPORT"] = "unix:///tmp/testunixsocket"
         client = ThriftClient(StubClient, self.app)
         self.assertTrue(isinstance(client.transport, TSocket.TSocket))
         self.assertEquals(client.transport._unix_socket, "/tmp/testunixsocket")
@@ -84,7 +84,8 @@ class TestSequenceFunctions(unittest.TestCase):
             client = ThriftClient(StubClient, self.app)
 
     def test_transport_http(self):
-        self.app.config["THRIFTCLIENT_TRANSPORT"] = "http://foo.bar.com:8080/end/point"
+        self.app.config[
+            "THRIFTCLIENT_TRANSPORT"] = "http://foo.bar.com:8080/end/point"
         client = ThriftClient(StubClient, self.app)
         self.assertTrue(isinstance(client.transport, THttpClient.THttpClient))
         self.assertEquals(client.transport.scheme, "http")
@@ -92,9 +93,9 @@ class TestSequenceFunctions(unittest.TestCase):
         self.assertEquals(client.transport.port, 8080)
         self.assertEquals(client.transport.path, "/end/point")
 
-
     def test_transport_https(self):
-        self.app.config["THRIFTCLIENT_TRANSPORT"] = "https://foo.bar.com:8080/end/point"
+        self.app.config[
+            "THRIFTCLIENT_TRANSPORT"] = "https://foo.bar.com:8080/end/point"
         client = ThriftClient(StubClient, self.app)
         self.assertTrue(isinstance(client.transport, THttpClient.THttpClient))
         self.assertEquals(client.transport.scheme, "https")
@@ -103,14 +104,16 @@ class TestSequenceFunctions(unittest.TestCase):
         self.assertEquals(client.transport.path, "/end/point")
 
     def test_transport_http_defaultport(self):
-        self.app.config["THRIFTCLIENT_TRANSPORT"] = "http://foo.bar.com/end/point"
+        self.app.config[
+            "THRIFTCLIENT_TRANSPORT"] = "http://foo.bar.com/end/point"
         client = ThriftClient(StubClient, self.app)
         self.assertTrue(isinstance(client.transport, THttpClient.THttpClient))
         self.assertEquals(client.transport.scheme, "http")
         self.assertEquals(client.transport.port, 80)
 
     def test_transport_defaultport(self):
-        self.app.config["THRIFTCLIENT_TRANSPORT"] = "https://foo.bar.com/end/point"
+        self.app.config[
+            "THRIFTCLIENT_TRANSPORT"] = "https://foo.bar.com/end/point"
         client = ThriftClient(StubClient, self.app)
         self.assertTrue(isinstance(client.transport, THttpClient.THttpClient))
         self.assertEquals(client.transport.scheme, "https")
@@ -124,7 +127,6 @@ class TestSequenceFunctions(unittest.TestCase):
         self.assertEquals(client.transport.port, 9090)
         self.assertEquals(client.transport.host, "192.168.0.42")
 
-
     def test_transport_tcps_with_cert(self):
         self.app.config["THRIFTCLIENT_TRANSPORT"] = "tcps://192.168.0.42"
         self.app.config["THRIFTCLIENT_SSL_CA_CERTS"] = "tests/cacert.pem"
@@ -132,7 +134,6 @@ class TestSequenceFunctions(unittest.TestCase):
         self.assertTrue(isinstance(client.transport, TSSLSocket.TSSLSocket))
         self.assertEquals(client.transport.port, 9090)
         self.assertEquals(client.transport.host, "192.168.0.42")
-
 
     def test_transport_tcps_forgot_cert(self):
         self.app.config["THRIFTCLIENT_TRANSPORT"] = "tcps://192.168.0.42"
@@ -151,31 +152,38 @@ class TestSequenceFunctions(unittest.TestCase):
             client = ThriftClient(StubClient, self.app)
 
     def test_transport_unixs_no_cert(self):
-        self.app.config["THRIFTCLIENT_TRANSPORT"] = "unixs:/tmp/thriftsocketfile"
+        self.app.config[
+            "THRIFTCLIENT_TRANSPORT"] = "unixs:/tmp/thriftsocketfile"
         self.app.config["THRIFTCLIENT_SSL_VALIDATE"] = False
         client = ThriftClient(StubClient, self.app)
         self.assertTrue(isinstance(client.transport, TSSLSocket.TSSLSocket))
-        self.assertEquals(client.transport._unix_socket, "/tmp/thriftsocketfile")
+        self.assertEquals(client.transport._unix_socket,
+                          "/tmp/thriftsocketfile")
 
     def test_transport_unixs_no_cert_2(self):
-        self.app.config["THRIFTCLIENT_TRANSPORT"] = "unixs:///tmp/thriftsocketfile"
+        self.app.config[
+            "THRIFTCLIENT_TRANSPORT"] = "unixs:///tmp/thriftsocketfile"
         self.app.config["THRIFTCLIENT_SSL_VALIDATE"] = False
         client = ThriftClient(StubClient, self.app)
         self.assertTrue(isinstance(client.transport, TSSLSocket.TSSLSocket))
-        self.assertEquals(client.transport._unix_socket, "/tmp/thriftsocketfile")
+        self.assertEquals(client.transport._unix_socket,
+                          "/tmp/thriftsocketfile")
 
     def test_transport_unixs_bad_hostname(self):
-        self.app.config["THRIFTCLIENT_TRANSPORT"] = "unixs://tmp/thriftsocketfile"
+        self.app.config[
+            "THRIFTCLIENT_TRANSPORT"] = "unixs://tmp/thriftsocketfile"
         self.app.config["THRIFTCLIENT_SSL_VALIDATE"] = False
         with self.assertRaises(RuntimeError):
             client = ThriftClient(StubClient, self.app)
 
     def test_transport_unixs_with_cert(self):
-        self.app.config["THRIFTCLIENT_TRANSPORT"] = "unixs:/tmp/thriftsocketfile"
+        self.app.config[
+            "THRIFTCLIENT_TRANSPORT"] = "unixs:/tmp/thriftsocketfile"
         self.app.config["THRIFTCLIENT_SSL_CA_CERTS"] = "tests/cacert.pem"
         client = ThriftClient(StubClient, self.app)
         self.assertTrue(isinstance(client.transport, TSSLSocket.TSSLSocket))
-        self.assertEquals(client.transport._unix_socket, "/tmp/thriftsocketfile")
+        self.assertEquals(client.transport._unix_socket,
+                          "/tmp/thriftsocketfile")
 
     def test_protocol_bad(self):
         self.app.config["THRIFTCLIENT_PROTOCOL"] = "BAD"
@@ -185,19 +193,20 @@ class TestSequenceFunctions(unittest.TestCase):
     def test_protocol_binary(self):
         self.app.config["THRIFTCLIENT_PROTOCOL"] = ThriftClient.BINARY
         client = ThriftClient(StubClient, self.app)
-        self.assertTrue(isinstance(client.protocol, TBinaryProtocol.TBinaryProtocol))
+        self.assertTrue(isinstance(client.protocol,
+                                   TBinaryProtocol.TBinaryProtocol))
 
     def test_protocol_compact(self):
         self.app.config["THRIFTCLIENT_PROTOCOL"] = ThriftClient.COMPACT
         client = ThriftClient(StubClient, self.app)
-        self.assertTrue(isinstance(client.protocol, TCompactProtocol.TCompactProtocol))
+        self.assertTrue(isinstance(client.protocol,
+                                   TCompactProtocol.TCompactProtocol))
 
-    if HAS_JSON_PROTOCOL:
-        def test_protocol_json(self):
-            self.app.config["THRIFTCLIENT_PROTOCOL"] = ThriftClient.JSON
-            client = ThriftClient(StubClient, self.app)
-            self.assertTrue(isinstance(client.protocol, TJSONProtocol.TJSONProtocol))
-
+    def test_protocol_json(self):
+        self.app.config["THRIFTCLIENT_PROTOCOL"] = ThriftClient.JSON
+        client = ThriftClient(StubClient, self.app)
+        self.assertTrue(isinstance(client.protocol,
+                                   TJSONProtocol.TJSONProtocol))
 
     def test_connection(self):
         """
@@ -281,7 +290,6 @@ class TestSequenceFunctions(unittest.TestCase):
         ret = testclient.get("/testme")
         self.assertEquals(ret.data, "OK")
         self.assertFalse(client.transport.isOpen())
-
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-Flask ThriftClient
+Flask ThriftClient (fork from https://bitbucket.org/chub/flask-thriftclient)
 ##################
 
 Introduction
@@ -157,3 +157,5 @@ Other options are:
 THRIFTCLIENT_BUFFERED: use buffered transport (default False)
 
 THRIFTCLIENT_ZLIB: use zlib compressed transport (default False)
+
+THRIFTCLIENT_FRAMED: use framed transport (defualt False)
